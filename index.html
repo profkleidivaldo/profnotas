@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Espelho de Notas e Fluência</title>
+<title>Espelho de Notas</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  max-width: 1200px;
+  max-width: 1300px;
   margin: auto;
   padding: 20px;
 }
@@ -18,12 +18,13 @@ body {
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 15px;
+  font-size: 14px;
 }
 
 th, td {
   border: 1px solid #ccc;
-  padding: 6px;
+  padding: 5px;
   text-align: center;
 }
 
@@ -32,9 +33,8 @@ th {
 }
 
 input, select, textarea, button {
-  padding: 6px;
-  margin: 4px 0;
   width: 100%;
+  padding: 6px;
   box-sizing: border-box;
 }
 
@@ -48,7 +48,7 @@ button {
   border: none;
   cursor: pointer;
   padding: 10px;
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 button:hover {
@@ -59,129 +59,113 @@ button:hover {
 
 <body>
 
-<h2>Espelho de Notas e Fluência Leitora</h2>
+<h2>Espelho de Notas e Frequência</h2>
 
-<label><strong>Turma (ex: 5A)</strong></label>
+<label>Turma</label>
 <input id="turma" placeholder="Ex: 5A">
 
-<button onclick="adicionarLinha()">➕ Adicionar aluno</button>
-<button onclick="gerarJS()">⬇️ Baixar arquivo .JS da turma</button>
+<label>Bimestre</label>
+<select id="bimestre">
+  <option value="1º Bimestre">1º Bimestre</option>
+  <option value="2º Bimestre">2º Bimestre</option>
+  <option value="3º Bimestre">3º Bimestre</option>
+  <option value="4º Bimestre">4º Bimestre</option>
+</select>
+
+<label>Colar dados do Excel</label>
+<textarea id="excelInput" rows="4"
+placeholder="RA | Nome | LP | Arte | EF | ER | MAT | GEO | HIS | CIE | Faltas"></textarea>
+
+<button onclick="importarExcel()">📥 Importar do Excel</button>
+<button onclick="adicionarLinha()">➕ Linha manual</button>
+<button onclick="gerarJS()">⬇️ Gerar arquivo da turma</button>
 
 <table>
 <thead>
 <tr>
   <th>RA</th>
-  <th>Nome</th>
-  <th>MAT</th>
+  <th>Estudante</th>
   <th>LP</th>
-  <th>HIS</th>
-  <th>GEO</th>
-  <th>CIE</th>
-  <th>EF</th>
-  <th>Fluência</th>
-  <th>Observação</th>
+  <th>Arte</th>
+  <th>Ed. Física</th>
+  <th>Ens. Religioso</th>
+  <th>Mat.</th>
+  <th>Geo.</th>
+  <th>Hist.</th>
+  <th>Ciên.</th>
+  <th>Faltas</th>
 </tr>
 </thead>
 <tbody id="tbody"></tbody>
 </table>
 
 <script>
-function adicionarLinha() {
+function adicionarLinha(valores = []) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td><input></td>
-    <td><input></td>
-    <td><input type="number" step="0.1"></td>
-    <td><input type="number" step="0.1"></td>
-    <td><input type="number" step="0.1"></td>
-    <td><input type="number" step="0.1"></td>
-    <td><input type="number" step="0.1"></td>
-    <td><input type="number" step="0.1"></td>
-    <td>
-      <select>
-        <option>Pré-leitor</option>
-        <option>Iniciante</option>
-        <option>Em desenvolvimento</option>
-        <option>Fluente</option>
-        <option>Fluente com compreensão</option>
-      </select>
-    </td>
-    <td><textarea rows="2"></textarea></td>
+    <td><input value="${valores[0]||""}"></td>
+    <td><input value="${valores[1]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[2]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[3]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[4]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[5]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[6]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[7]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[8]||""}"></td>
+    <td><input type="number" step="0.1" value="${valores[9]||""}"></td>
+    <td><input type="number" value="${valores[10]||""}"></td>
   `;
   document.getElementById("tbody").appendChild(tr);
 }
 
+function importarExcel() {
+  const linhas = document.getElementById("excelInput").value.trim().split(/\r?\n/);
+  linhas.forEach(l => adicionarLinha(l.split("\t")));
+  document.getElementById("excelInput").value = "";
+}
+
 function gerarJS() {
   const turma = document.getElementById("turma").value.trim();
-  if (!turma) {
-    alert("Informe a turma.");
-    return;
-  }
+  const bimestre = document.getElementById("bimestre").value;
+  if (!turma) return alert("Informe a turma.");
 
   const registros = [];
 
   document.querySelectorAll("#tbody tr").forEach(tr => {
-    const c = tr.querySelectorAll("input, select, textarea");
-    const ra = c[0].value.trim();
-    if (!ra) return;
+    const c = tr.querySelectorAll("input");
+    if (!c[0].value) return;
 
     const aluno = {
-      ra: ra,
+      ra: c[0].value,
       nome: c[1].value,
-      turma: turma,
+      turma,
+      bimestre,
       notas: {
-        MAT: c[2].value,
-        LP: c[3].value,
-        HIS: c[4].value,
-        GEO: c[5].value,
-        CIE: c[6].value,
-        EF:  c[7].value
+        LP: c[2].value,
+        ARTE: c[3].value,
+        EF: c[4].value,
+        ER: c[5].value,
+        MAT: c[6].value,
+        GEO: c[7].value,
+        HIS: c[8].value,
+        CIE: c[9].value
       },
-      fluencia: {
-        nivel: c[8].value,
-        observacoes: c[9].value
-      }
+      faltas: c[10].value
     };
 
-    const criptografado = CryptoJS.AES.encrypt(
-      JSON.stringify(aluno),
-      ra
-    ).toString();
-
-    registros.push({
-      ra: ra,
-      dados: criptografado
-    });
+    const dados = CryptoJS.AES.encrypt(JSON.stringify(aluno), aluno.ra).toString();
+    registros.push({ ra: aluno.ra, dados });
   });
 
-  if (registros.length === 0) {
-    alert("Nenhum aluno válido informado.");
-    return;
-  }
+  const js =
+`// Turma ${turma}
+window.DADOS_TURMA = ${JSON.stringify(registros, null, 2)};`;
 
-  const jsFinal =
-`// Arquivo gerado automaticamente
-// Turma: ${turma}
-
-window.DADOS_TURMA = ${JSON.stringify(registros, null, 2)};
-`;
-
-  const blob = new Blob([jsFinal], { type: "application/javascript;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${turma}/${turma}.js`.includes("/")
-    ? `${turma}.js`
-    : `${turma}.js`;
-
-  document.body.appendChild(link);
-  link.click();
-
-  setTimeout(() => {
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, 200);
+  const blob = new Blob([js], { type: "application/javascript" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${turma}.js`;
+  a.click();
 }
 </script>
 
