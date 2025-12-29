@@ -61,11 +61,11 @@ button:hover {
 
 <h2>Espelho de Notas e Fluência Leitora</h2>
 
-<label><strong>Turma (ex: 5anoc)</strong></label>
-<input id="turma" placeholder="Ex: 5anoc">
+<label><strong>Turma (ex: 5A)</strong></label>
+<input id="turma" placeholder="Ex: 5A">
 
 <button onclick="adicionarLinha()">➕ Adicionar aluno</button>
-<button onclick="gerarHTML()">⬇️ Baixar HTML criptografado</button>
+<button onclick="gerarJS()">⬇️ Baixar arquivo .JS da turma</button>
 
 <table>
 <thead>
@@ -111,7 +111,7 @@ function adicionarLinha() {
   document.getElementById("tbody").appendChild(tr);
 }
 
-function gerarHTML() {
+function gerarJS() {
   const turma = document.getElementById("turma").value.trim();
   if (!turma) {
     alert("Informe a turma.");
@@ -121,25 +121,25 @@ function gerarHTML() {
   const registros = [];
 
   document.querySelectorAll("#tbody tr").forEach(tr => {
-    const campos = tr.querySelectorAll("input, select, textarea");
-    const ra = campos[0].value.trim();
+    const c = tr.querySelectorAll("input, select, textarea");
+    const ra = c[0].value.trim();
     if (!ra) return;
 
     const aluno = {
       ra: ra,
-      nome: campos[1].value,
+      nome: c[1].value,
       turma: turma,
       notas: {
-        MAT: campos[2].value,
-        LP: campos[3].value,
-        HIS: campos[4].value,
-        GEO: campos[5].value,
-        CIE: campos[6].value,
-        EF:  campos[7].value
+        MAT: c[2].value,
+        LP: c[3].value,
+        HIS: c[4].value,
+        GEO: c[5].value,
+        CIE: c[6].value,
+        EF:  c[7].value
       },
       fluencia: {
-        nivel: campos[8].value,
-        observacoes: campos[9].value
+        nivel: c[8].value,
+        observacoes: c[9].value
       }
     };
 
@@ -148,7 +148,10 @@ function gerarHTML() {
       ra
     ).toString();
 
-    registros.push({ ra: ra, dados: criptografado });
+    registros.push({
+      ra: ra,
+      dados: criptografado
+    });
   });
 
   if (registros.length === 0) {
@@ -156,29 +159,22 @@ function gerarHTML() {
     return;
   }
 
-  const htmlFinal = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Dados da Turma ${turma}</title>
-</head>
-<body>
+  const jsFinal =
+`// Arquivo gerado automaticamente
+// Turma: ${turma}
 
-<h3>Dados criptografados da turma ${turma}</h3>
+window.DADOS_TURMA = ${JSON.stringify(registros, null, 2)};
+`;
 
-<script>
-const DADOS_TURMA = ${JSON.stringify(registros, null, 2)};
-<\/script>
-
-</body>
-</html>`;
-
-  const blob = new Blob([htmlFinal], { type: "text/html;charset=utf-8" });
+  const blob = new Blob([jsFinal], { type: "application/javascript;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
   const link = document.createElement("a");
   link.href = url;
-  link.download = "dados-" + turma.toLowerCase() + ".html";
+  link.download = `${turma}/${turma}.js`.includes("/")
+    ? `${turma}.js`
+    : `${turma}.js`;
+
   document.body.appendChild(link);
   link.click();
 
