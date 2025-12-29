@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espelho de Notas e Fluência</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+input, select, textarea, button {
+  padding: 6px;
+  margin: 4px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  background: #1976d2;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+button:hover {
+  background: #125aa0;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Espelho de Notas e Fluência Leitora</h2>
+
+<label><strong>Turma (ex: 5anoc)</strong></label>
+<input id="turma" placeholder="Ex: 5anoc">
+
+<button onclick="adicionarLinha()">➕ Adicionar aluno</button>
+<button onclick="gerarHTML()">⬇️ Baixar HTML criptografado</button>
+
+<table>
+<thead>
+<tr>
+  <th>RA</th>
+  <th>Nome</th>
+  <th>MAT</th>
+  <th>LP</th>
+  <th>HIS</th>
+  <th>GEO</th>
+  <th>CIE</th>
+  <th>EF</th>
+  <th>Fluência</th>
+  <th>Observação</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+function adicionarLinha() {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input></td>
+    <td><input></td>
+    <td><input type="number" step="0.1"></td>
+    <td><input type="number" step="0.1"></td>
+    <td><input type="number" step="0.1"></td>
+    <td><input type="number" step="0.1"></td>
+    <td><input type="number" step="0.1"></td>
+    <td><input type="number" step="0.1"></td>
+    <td>
+      <select>
+        <option>Pré-leitor</option>
+        <option>Iniciante</option>
+        <option>Em desenvolvimento</option>
+        <option>Fluente</option>
+        <option>Fluente com compreensão</option>
+      </select>
+    </td>
+    <td><textarea rows="2"></textarea></td>
+  `;
+  document.getElementById("tbody").appendChild(tr);
+}
+
+function gerarHTML() {
+  const turma = document.getElementById("turma").value.trim();
+  if (!turma) {
+    alert("Informe a turma.");
+    return;
+  }
+
+  const registros = [];
+
+  document.querySelectorAll("#tbody tr").forEach(tr => {
+    const campos = tr.querySelectorAll("input, select, textarea");
+    const ra = campos[0].value.trim();
+    if (!ra) return;
+
+    const aluno = {
+      ra: ra,
+      nome: campos[1].value,
+      turma: turma,
+      notas: {
+        MAT: campos[2].value,
+        LP: campos[3].value,
+        HIS: campos[4].value,
+        GEO: campos[5].value,
+        CIE: campos[6].value,
+        EF:  campos[7].value
+      },
+      fluencia: {
+        nivel: campos[8].value,
+        observacoes: campos[9].value
+      }
+    };
+
+    const criptografado = CryptoJS.AES.encrypt(
+      JSON.stringify(aluno),
+      ra
+    ).toString();
+
+    registros.push({ ra: ra, dados: criptografado });
+  });
+
+  if (registros.length === 0) {
+    alert("Nenhum aluno válido informado.");
+    return;
+  }
+
+  const htmlFinal = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Dados da Turma ${turma}</title>
+</head>
+<body>
+
+<h3>Dados criptografados da turma ${turma}</h3>
+
+<script>
+const DADOS_TURMA = ${JSON.stringify(registros, null, 2)};
+<\/script>
+
+</body>
+</html>`;
+
+  const blob = new Blob([htmlFinal], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "dados-" + turma.toLowerCase() + ".html";
+  document.body.appendChild(link);
+  link.click();
+
+  setTimeout(() => {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+</script>
+
+</body>
+</html>
