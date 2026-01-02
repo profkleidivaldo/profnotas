@@ -2,171 +2,163 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<title>Espelho de Notas — Professor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Espelho de Notas</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  max-width: 1300px;
-  margin: auto;
-  padding: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  font-size: 14px;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  padding: 5px;
-  text-align: center;
-}
-
-th {
-  background: #f0f0f0;
-}
-
-input, select, textarea, button {
-  width: 100%;
-  padding: 6px;
-  box-sizing: border-box;
-}
-
-textarea {
-  resize: vertical;
-}
-
-button {
-  background: #1976d2;
-  color: white;
-  border: none;
-  cursor: pointer;
-  padding: 10px;
-  margin-top: 5px;
-}
-
-button:hover {
-  background: #125aa0;
-}
+body{font-family:Arial;max-width:1400px;margin:auto;padding:20px}
+h2{text-align:center}
+.tabs button{padding:8px;border:none;margin-right:4px;cursor:pointer}
+.tabs .ativo{background:#1976d2;color:#fff}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+th,td{border:1px solid #000;padding:4px;text-align:center}
+th{background:#f0f0f0}
+input,textarea{width:100%;border:none;text-align:center}
+textarea{border:1px solid #000;margin-top:6px}
+button.acao{background:#1976d2;color:#fff;border:none;padding:10px;margin-top:8px;cursor:pointer}
 </style>
 </head>
 
 <body>
 
-<h2>Espelho de Notas e Frequência</h2>
+<h2>Espelho de Notas — Registro Anual</h2>
 
 <label>Turma</label>
-<input id="turma" placeholder="Ex: 5A">
+<input id="turma">
 
-<label>Bimestre</label>
-<select id="bimestre">
-  <option value="1º Bimestre">1º Bimestre</option>
-  <option value="2º Bimestre">2º Bimestre</option>
-  <option value="3º Bimestre">3º Bimestre</option>
-  <option value="4º Bimestre">4º Bimestre</option>
-</select>
+<div class="tabs">
+  <button onclick="mudarBimestre(1)" class="ativo">1º BIM</button>
+  <button onclick="mudarBimestre(2)">2º BIM</button>
+  <button onclick="mudarBimestre(3)">3º BIM</button>
+  <button onclick="mudarBimestre(4)">4º BIM</button>
+</div>
 
-<label>Colar dados do Excel</label>
-<textarea id="excelInput" rows="4"
-placeholder="RA | Nome | LP | Arte | EF | ER | MAT | GEO | HIS | CIE | Faltas"></textarea>
+<label>Colar dados do Excel (tabela completa)</label>
+<textarea id="excel" rows="5"
+placeholder="Nº | Nome | LP | Arte | EF | ER | MAT | GEO | HIS | CIE | Faltas"></textarea>
 
-<button onclick="importarExcel()">📥 Importar do Excel</button>
-<button onclick="adicionarLinha()">➕ Linha manual</button>
-<button onclick="gerarJS()">⬇️ Gerar arquivo da turma</button>
+<button class="acao" onclick="importarExcel()">Importar do Excel</button>
+<button class="acao" onclick="salvarBimestre()">Salvar Bimestre</button>
+<button class="acao" onclick="gerarArquivo()">Gerar Arquivo Criptografado</button>
 
 <table>
 <thead>
 <tr>
-  <th>RA</th>
-  <th>Estudante</th>
-  <th>LP</th>
-  <th>Arte</th>
-  <th>Ed. Física</th>
-  <th>Ens. Religioso</th>
-  <th>Mat.</th>
-  <th>Geo.</th>
-  <th>Hist.</th>
-  <th>Ciên.</th>
-  <th>Faltas</th>
+  <th>Nº</th><th>ESTUDANTE</th>
+  <th>LP</th><th>ARTE</th><th>EF</th><th>ER</th>
+  <th>MAT</th><th>GEO</th><th>HIS</th><th>CIE</th>
+  <th>FALTAS</th>
 </tr>
 </thead>
 <tbody id="tbody"></tbody>
 </table>
 
 <script>
-function adicionarLinha(valores = []) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td><input value="${valores[0]||""}"></td>
-    <td><input value="${valores[1]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[2]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[3]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[4]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[5]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[6]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[7]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[8]||""}"></td>
-    <td><input type="number" step="0.1" value="${valores[9]||""}"></td>
-    <td><input type="number" value="${valores[10]||""}"></td>
-  `;
-  document.getElementById("tbody").appendChild(tr);
+let bimestreAtual=1;
+let dados=JSON.parse(localStorage.getItem("espelhoDados"))||{};
+const tbody=document.getElementById("tbody");
+
+function salvarLocal(){
+  localStorage.setItem("espelhoDados",JSON.stringify(dados));
 }
 
-function importarExcel() {
-  const linhas = document.getElementById("excelInput").value.trim().split(/\r?\n/);
-  linhas.forEach(l => adicionarLinha(l.split("\t")));
-  document.getElementById("excelInput").value = "";
+function mudarBimestre(b){
+  bimestreAtual=b;
+  document.querySelectorAll(".tabs button").forEach(btn=>btn.classList.remove("ativo"));
+  document.querySelectorAll(".tabs button")[b-1].classList.add("ativo");
+  carregarTabela();
 }
 
-function gerarJS() {
-  const turma = document.getElementById("turma").value.trim();
-  const bimestre = document.getElementById("bimestre").value;
-  if (!turma) return alert("Informe a turma.");
+function criarLinha(i,val={}){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`
+<td>${i}</td>
+<td><input value="${val.nome||""}"></td>
+<td><input value="${val.LP||""}"></td>
+<td><input value="${val.ARTE||""}"></td>
+<td><input value="${val.EF||""}"></td>
+<td><input value="${val.ER||""}"></td>
+<td><input value="${val.MAT||""}"></td>
+<td><input value="${val.GEO||""}"></td>
+<td><input value="${val.HIS||""}"></td>
+<td><input value="${val.CIE||""}"></td>
+<td><input value="${val.FALTAS||""}"></td>`;
+  tbody.appendChild(tr);
+}
 
-  const registros = [];
+function carregarTabela(){
+  tbody.innerHTML="";
+  for(let i=1;i<=30;i++){
+    const a=dados[i];
+    const b=a?.bimestres?.[bimestreAtual]||{};
+    criarLinha(i,{nome:a?.nome,...b});
+  }
+}
 
-  document.querySelectorAll("#tbody tr").forEach(tr => {
-    const c = tr.querySelectorAll("input");
-    if (!c[0].value) return;
-
-    const aluno = {
-      ra: c[0].value,
-      nome: c[1].value,
-      turma,
-      bimestre,
-      notas: {
-        LP: c[2].value,
-        ARTE: c[3].value,
-        EF: c[4].value,
-        ER: c[5].value,
-        MAT: c[6].value,
-        GEO: c[7].value,
-        HIS: c[8].value,
-        CIE: c[9].value
-      },
-      faltas: c[10].value
+function importarExcel(){
+  const linhas=document.getElementById("excel").value.trim().split(/\r?\n/);
+  linhas.forEach(l=>{
+    const c=l.split("\t");
+    const i=parseInt(c[0]);
+    if(!i||!c[1]) return;
+    if(!dados[i]) dados[i]={nome:c[1],bimestres:{}};
+    dados[i].nome=c[1];
+    dados[i].bimestres[bimestreAtual]={
+      LP:c[2],ARTE:c[3],EF:c[4],ER:c[5],
+      MAT:c[6],GEO:c[7],HIS:c[8],CIE:c[9],FALTAS:c[10]
     };
-
-    const dados = CryptoJS.AES.encrypt(JSON.stringify(aluno), aluno.ra).toString();
-    registros.push({ ra: aluno.ra, dados });
   });
+  salvarLocal();
+  carregarTabela();
+  document.getElementById("excel").value="";
+}
 
-  const js =
-`// Turma ${turma}
-window.DADOS_TURMA = ${JSON.stringify(registros, null, 2)};`;
+function salvarBimestre(){
+  [...tbody.rows].forEach((tr,i)=>{
+    const c=[...tr.querySelectorAll("input")];
+    if(!c[0].value) return;
+    if(!dados[i+1]) dados[i+1]={nome:c[0].value,bimestres:{}};
+    dados[i+1].nome=c[0].value;
+    dados[i+1].bimestres[bimestreAtual]={
+      LP:c[1].value,ARTE:c[2].value,EF:c[3].value,ER:c[4].value,
+      MAT:c[5].value,GEO:c[6].value,HIS:c[7].value,CIE:c[8].value,
+      FALTAS:c[9].value
+    };
+  });
+  salvarLocal();
+  alert("Bimestre salvo");
+}
 
-  const blob = new Blob([js], { type: "application/javascript" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${turma}.js`;
+function gerarArquivo(){
+  const registros=[];
+  Object.values(dados).forEach(a=>{
+    const medias={};
+    ["LP","ARTE","EF","ER","MAT","GEO","HIS","CIE"].forEach(d=>{
+      let s=0,q=0;
+      for(let b in a.bimestres){
+        if(a.bimestres[b][d]){
+          s+=Number(a.bimestres[b][d]); q++;
+        }
+      }
+      medias[d]=q?(s/q).toFixed(1):"";
+    });
+    const payload={...a,medias};
+    registros.push({
+      nome:a.nome,
+      dados:CryptoJS.AES.encrypt(JSON.stringify(payload),a.nome.toLowerCase()).toString()
+    });
+  });
+  const js=`window.DADOS_ESCOLA=${JSON.stringify(registros,null,2)};`;
+  const blob=new Blob([js],{type:"application/javascript"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="dados_turma.js";
   a.click();
 }
+
+carregarTabela();
 </script>
 
 </body>
